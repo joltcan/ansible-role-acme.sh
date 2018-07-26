@@ -53,8 +53,8 @@ Requires port 80 to be available, acme.sh will take over the port to listen for 
 
 ## TODO
 
-[ ] test mode for Vagrant
-[ ] Support more modes
+- [ ] test mode for Vagrant
+- [ ] Support more modes
 
 ## License
 
