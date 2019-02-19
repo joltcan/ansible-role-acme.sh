@@ -1,8 +1,6 @@
 ---
 acme_domain_name: "{{ ansible_host }}"
-
-acme_mode: 'standalone'
-
+acme_mode: 'webroot'
 acme_user: 'root'
 
 acme_fullchain_file: /etc/ssl/certs/{{ acme_domain_name }}.pem

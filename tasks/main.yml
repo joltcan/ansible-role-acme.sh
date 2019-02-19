@@ -20,7 +20,7 @@
     state: directory
   become: yes
 
-- name: Issue cert for domain via webroot mode
+- name: Issue cert for domain via {{ acme_mode }} mode
   shell: '"/{{ acme_user }}/.acme.sh"/acme.sh --issue -d {{ acme_domain_name }} -w {{ acme_webroot_path }}'
   args:
     creates: /{{ acme_user }}/.acme.sh/{{ acme_domain_name }}/ca.cer
@@ -34,8 +34,8 @@
     - register
 
   # requires port 80 to be available
-- name: Issue cert for domain via standalone mode
-  shell: '"/{{ acme_user }}/.acme.sh"/acme.sh --issue --standalone -d {{ acme_domain_name }}'
+- name: Issue cert for domain via {{ acme_mode }} mode
+  shell: '"/{{ acme_user }}/.acme.sh"/acme.sh --issue --standalone -d {{ acme_domain_name }} -w {{ acme_webroot_path }}'
   args:
     creates: /{{ acme_user }}/.acme.sh/{{ acme_domain_name }}/ca.cer
     warn: False
@@ -53,7 +53,7 @@
       --key-file       {{ acme_key_file }} \
       --reloadcmd     "{{ acme_reload_cmd }}" \
       --pre-hook     "{{ acme_pre_hook }}" \
-             "{{ acme_post_hook }}"
+      --post-hook     "{{ acme_post_hook }}"
   args:
     warn: False
   register: installcert
@@ -61,6 +61,13 @@
   become: yes
   tags:
     - install
+
+- name: Ensure post-hook is run
+  command: "{{ acme_post_hook }}"
+  args:
+    warn: False
+  when: acme_post_hook is defined
+  become: yes
 
 - name: Ensure we enable auto upgrade
   lineinfile:
