@@ -1,0 +1,71 @@
+---
+- name: Ensure we have acme dependencies
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - socat
+    - wget
+  become: yes
+
+- name: Install acme
+  shell: wget -O - https://get.acme.sh | sh
+  args:
+    creates: "/{{ acme_user }}/.acme.sh"
+    warn: False
+  become: yes
+
+- name: Ensure we have the webroot
+  file:
+    path: "{{ acme_webroot_path }}"
+    state: directory
+  become: yes
+
+- name: Issue cert for domain via webroot mode
+  shell: '"/{{ acme_user }}/.acme.sh"/acme.sh --issue -d {{ acme_domain_name }} -w {{ acme_webroot_path }}'
+  args:
+    creates: /{{ acme_user }}/.acme.sh/{{ acme_domain_name }}/ca.cer
+    warn: False
+  register: issue
+  failed_when: issue.rc == 1
+  when: acme_mode == 'webroot'
+  become: yes
+  become_user: "{{ acme_user }}"
+  tags:
+    - register
+
+  # requires port 80 to be available
+- name: Issue cert for domain via standalone mode
+  shell: '"/{{ acme_user }}/.acme.sh"/acme.sh --issue --standalone -d {{ acme_domain_name }}'
+  args:
+    creates: /{{ acme_user }}/.acme.sh/{{ acme_domain_name }}/ca.cer
+    warn: False
+  register: issue
+  failed_when: issue.rc == 1
+  when: acme_mode == 'standalone'
+  become: yes
+  tags:
+    - register
+
+- name: Ensure cert is installed to where it belong
+  shell: |
+    "/root/.acme.sh"/acme.sh --install-cert -d {{ acme_domain_name }} \
+      --fullchain-file {{ acme_fullchain_file }} \
+      --key-file       {{ acme_key_file }} \
+      --reloadcmd     "{{ acme_reload_cmd }}" \
+      --pre-hook     "{{ acme_pre_hook }}" \
+             "{{ acme_post_hook }}"
+  args:
+    warn: False
+  register: installcert
+  failed_when: installcert.rc != 0
+  become: yes
+  tags:
+    - install
+
+- name: Ensure we enable auto upgrade
+  lineinfile:
+    dest: /root/.acme.sh/account.conf
+    regexp: "^#?AUTO_UPGRADE"
+    line: 'AUTO_UPGRADE="1"'
+  become: yes
+
