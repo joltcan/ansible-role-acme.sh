@@ -63,7 +63,7 @@
     - install
 
 - name: Ensure post-hook is run
-  command: "{{ acme_post_hook }}"
+  shell: "{{ acme_post_hook }}"
   args:
     warn: False
   when: acme_post_hook is defined
