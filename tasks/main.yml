@@ -66,7 +66,7 @@
   shell: "{{ acme_post_hook }}"
   args:
     warn: False
-  when: acme_post_hook is defined
+  when: acme_post_hook is defined and acme_post_hook != ""
   become: yes
 
 - name: Ensure we enable auto upgrade
